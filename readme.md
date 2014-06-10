@@ -41,3 +41,11 @@ The following is equivalent to the above:
     (tin/fill-style "#ccc")
     (tin/fill-rect 10 10 10 10))
 ```
+
+### Todo:
+
+- [ ] Getter functions for canvas properties
+- [ ] Publish to clojars
+- [ ] Live example, more/better examples
+- [ ] Unit tests
+- [ ] Nail down a better get-image-data API

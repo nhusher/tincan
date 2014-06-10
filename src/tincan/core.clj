@@ -89,6 +89,8 @@
       `(set! (. ~ctx ~fs) ~(first args)))))
 
 
+;; the stupid wrap/unwrap game below can probably be
+;; replaced with a (comp apply partial) or something
 (defmacro draw [ctx# & forms#]
   `(do ~@(map (fn [[f & a]] (translate-fn ctx# f a)) forms#)))
 
