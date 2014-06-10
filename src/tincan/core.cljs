@@ -1,7 +1,6 @@
 (ns tincan.core
   (:require-macros [tincan.core :as tin]))
 
-
 (tin/gen-canvas-fns)
 (tin/gen-canvas-props)
 

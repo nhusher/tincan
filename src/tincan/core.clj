@@ -6,7 +6,7 @@
 ;;
 
 (def ^:private canvas-functions
-  '[ arc
+  '#{arc
      arc-to
      begin-path
      bezier-curve-to
@@ -42,10 +42,10 @@
      stroke-rect
      stroke-text
      transform
-     translate])
+     translate})
 
 (def ^:private canvas-properties
-  '[ fill-style
+  '#{fill-style
      font
      global-alpha
      global-composite-operation
@@ -59,7 +59,7 @@
      shadow-offset-y
      stroke-style
      text-align
-     text-baseline ])
+     text-baseline })
 
 (defn ^:private camel-caseify [s]
   (let [[f & r] (split (name s) #"-")]
@@ -82,3 +82,17 @@
 (defmacro ^:private gen-canvas-props []
   `(do ~@(map gen-canvas-prop canvas-properties)))
 
+(defn ^:private translate-fn [ctx f args]
+  (let [fs (symbol (str "-" (camel-caseify (name f))))]
+    (if (contains? canvas-functions f)
+      `(.call (. ~ctx ~fs) ~ctx ~@args)
+      `(set! (. ~ctx ~fs) ~(first args)))))
+
+
+(defmacro draw [ctx# & forms#]
+  `(do ~@(map (fn [[f & a]] (translate-fn ctx# f a)) forms#)))
+
+
+;; (macroexpand '(draw ctx
+;;                     (fill-style "#ccc")
+;;                     (fill-rect 10 10 10 10)))
