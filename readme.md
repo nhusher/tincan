@@ -12,7 +12,7 @@ It's possible I will rewrite setter functions to use an bang (e.g. `fill-style!`
 
 The easiest way is to use the `draw` macro to get started. Function and property names are described above.
 
-````
+```clojure
 (ns tincan.demo
   (:require-macros [tincan.core :refer [draw]]))
 
@@ -22,7 +22,7 @@ The easiest way is to use the `draw` macro to get started. Function and property
 (draw ctx
       (fill-style "#ccc")      ;; set the fill style to a light gray
       (fill-rect 10 10 10 10)) ;; draw a rectangle
-````
+```
 
 ### Functions
 
@@ -30,7 +30,7 @@ For higher-order usage, it might be worthwhile to use the function wrappers inst
 
 The following is equivalent to the above:
 
-````
+```clojure
 (ns tincan.demo
   (:require [tincan.core :as tin]))
 
@@ -40,4 +40,4 @@ The following is equivalent to the above:
 (-> ctx
     (tin/fill-style "#ccc")
     (tin/fill-rect 10 10 10 10))
-````
+```
