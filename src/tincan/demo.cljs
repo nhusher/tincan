@@ -16,5 +16,7 @@
 ;;     (tin/fill-rect 30 30 10 10))
 
 (draw ctx
-      (fill-style "#ccc")
-      (fill-rect 10 10 10 10))
+      (set-fill-style! "#ccc")
+      (fill-rect 10 10 10 10)
+      (set-fill-style! "#000")
+      (fill-rect 20 20 10 10))

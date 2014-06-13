@@ -1,9 +1,6 @@
 (ns tincan.core
-  (require [clojure.string :refer [split join capitalize]]))
-
-;;
-;; Lifted nearly-verbatim from Om's dom macros
-;;
+  (require [clojure.string :as s :refer [split join capitalize]]
+           [clojure.walk :refer [postwalk]]))
 
 (def ^:private canvas-functions
   '#{arc
@@ -61,40 +58,71 @@
      text-align
      text-baseline })
 
-(defn ^:private camel-caseify [s]
-  (let [[f & r] (split (name s) #"-")]
-    (apply str f (map capitalize r))))
+;;
+;; TODO: these functions are really gross.
+;;
+(defn- setter? [s] (and
+                    (contains? canvas-properties (symbol (s/replace (join "-" (rest (split (name s) #"-"))) "!" "")))
+                    (= "set" (first (split (name s) #"-")))
+                    (= \! (last (name s)))))
 
-(defn ^:private gen-canvas-fn [cv-fn]
+(defn- getter? [s] (and
+                    (contains? canvas-properties (symbol (join "-" (rest (split (name s) #"-")))))
+                    (= "get" (first (split (name s) #"-")))))
+
+(defn- prop-fn? [s] (or (getter? s) (setter? s)))
+
+(defn- to-js-name
+  "Translates a clojure-style function name into the relevant JS property
+   name. It strips 'get-', 'set-' and '!' from the name before translation.
+
+   e.g. 'get-fill-style' tranlates to '-fillStyle' or 'set-stroke-style!' to
+   '-strokeStyle'"
+
+  [s] (let [[f & r] (split (name s) #"-")]
+        (if (prop-fn? s)
+          (to-js-name (s/replace (join "-" r) "!" ""))
+          (apply str f (map capitalize r)))))
+
+(defn- prop-name [s] (symbol (str "-" (to-js-name (name s)))))
+
+(defn- gen-canvas-fn [cv-fn]
   `(defn ~(symbol cv-fn) [ ctx# & args# ]
-     (.apply (. ctx# ~(symbol (str "-" (camel-caseify (name cv-fn))))) ctx# (to-array args#))
+     (.apply (. ctx# ~(prop-name cv-fn)) ctx# (to-array args#))
      ctx#))
 
-(defn ^:private gen-canvas-prop [cv-prop]
-  `(defn ~(symbol cv-prop) [ ctx# val# ]
-     (set! (. ctx# ~(symbol (str "-" (camel-caseify (name cv-prop)))))
-           val#)
+(defn- gen-canvas-setter [cv-prop]
+  `(defn ~(symbol (str "set-" cv-prop "!")) [ ctx# val# ]
+     (set! (. ctx# ~(prop-name cv-prop)) val#)
      ctx#))
 
+(defn- gen-canvas-getter [cv-prop]
+  `(defn ~(symbol (str "get-" cv-prop)) [ ctx# ]
+     (. ctx# ~(prop-name cv-prop))))
+
+;;
+;; TODO: I might be able to mash these together a little more nicely.
+;;
 (defmacro ^:private gen-canvas-fns []
   `(do ~@(map gen-canvas-fn canvas-functions)))
 
-(defmacro ^:private gen-canvas-props []
-  `(do ~@(map gen-canvas-prop canvas-properties)))
+(defmacro ^:private gen-canvas-setters []
+  `(do ~@(map gen-canvas-setter canvas-properties)))
 
-(defn ^:private translate-fn [ctx f args]
-  (let [fs (symbol (str "-" (camel-caseify (name f))))]
-    (if (contains? canvas-functions f)
-      `(.call (. ~ctx ~fs) ~ctx ~@args)
-      `(set! (. ~ctx ~fs) ~(first args)))))
+(defmacro ^:private gen-canvas-getters []
+  `(do ~@(map gen-canvas-getter canvas-properties)))
 
+(defn- translate-fn [ctx form]
+  (if (seq? form)
+    (let [[f & args] form
+          fs (prop-name f)]
+      (cond
+       (setter? f) `(set! (. ~ctx ~fs) ~(first args))
+       (getter? f) `(. ~ctx ~fs)
+       (contains? canvas-functions f) `(.call (. ~ctx ~fs) ~ctx ~@args)
+       :else form))
 
-;; the stupid wrap/unwrap game below can probably be
-;; replaced with a (comp apply partial) or something
-(defmacro draw [ctx# & forms#]
-  `(do ~@(map (fn [[f & a]] (translate-fn ctx# f a)) forms#)))
+    form))
 
-
-;; (macroexpand '(draw ctx
-;;                     (fill-style "#ccc")
-;;                     (fill-rect 10 10 10 10)))
+(defmacro draw [ ctx# & forms# ]
+  `(do ~@(map #(postwalk (partial translate-fn ctx#) %) forms#)))

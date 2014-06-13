@@ -2,8 +2,8 @@
   (:require-macros [tincan.core :as tin]))
 
 (tin/gen-canvas-fns)
-(tin/gen-canvas-props)
-
+(tin/gen-canvas-getters)
+(tin/gen-canvas-setters)
 
 (defn canvas? [cvx]
   (= (type cvx) js/HTMLCanvasElement))
