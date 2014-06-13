@@ -18,8 +18,10 @@ The easiest way is to use the `draw` macro to get started. Function and property
 (def ctx (.getContext c "2d"))
 
 (draw ctx
-      (set-fill-style! "#ccc")      ;; set the fill style to a light gray
-      (fill-rect 10 10 10 10)) ;; draw a rectangle
+      (set-fill-style! "#ccc")        ;; set the fill style to a light gray
+      (fill-rect 10 10 10 10)         ;; draw a rectangle
+      (if (= (get-fill-style) "#ccc") ;; do a comparison
+        (fill-rect 10 20 10 10)))
 ```
 
 ### Functions
@@ -34,15 +36,17 @@ The following is equivalent to the above:
 
 (def c (js/document.getElementById "canvas"))
 (def ctx (tin/get-context c))
+
+(do
+    (tin/set-fill-style! ctx "#ccc")
+    (tin/fill-rect ctx 10 10 10 10)
+    (if (= (tin/get-fill-style ctx) "#ccc")
+      (fill-rect 10 20 10 10)))
   
-(-> ctx
-    (tin/set-fill-style! "#ccc")
-    (tin/fill-rect 10 10 10 10))
 ```
 
 ### Todo:
 
-- [ ] Getter functions for canvas properties
 - [ ] Publish to clojars
 - [ ] Live example, more/better examples
 - [ ] Unit tests
